@@ -140,7 +140,8 @@ export function RestTimer({
                 }
             ]}
         >
-            <View style={styles.timerContainer}>        {/* Circular Progress */}
+            <View style={styles.timerContainer}>
+                {/* Circular Progress */}
                 <View style={styles.circularProgress}>
                     <View style={[styles.progressRing, { borderColor: '#F3F4F6' }]} />
                     <View

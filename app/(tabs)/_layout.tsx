@@ -17,8 +17,8 @@ export default function TabLayout() {
           borderTopWidth: 1,
           borderTopColor: '#E5E7EB',
           paddingTop: 8,
-          paddingBottom: Math.max(insets.bottom, 8) + 8, // Add extra padding for phone's tab bar
-          height: 60 + Math.max(insets.bottom, 0) + 16, // Adjust height based on safe area
+          paddingBottom: Math.max(insets.bottom, 8) + 8,
+          height: 60 + Math.max(insets.bottom, 0) + 16,
           position: 'absolute',
           bottom: 0,
         },

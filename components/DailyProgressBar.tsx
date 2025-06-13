@@ -24,6 +24,11 @@ export function DailyProgressBar({ current, target, label, color, unit = '' }: D
                 </Text>
             </View>
 
+            {/* Add percentage display above the progress bar */}
+            <Text style={[styles.percentageFixed, { color: isOverTarget ? '#EF4444' : color }]}>
+                {Math.round(percentage)}%
+            </Text>
+
             <View style={styles.progressContainer}>
                 <View style={styles.progressTrack}>
                     <LinearGradient
@@ -49,11 +54,7 @@ export function DailyProgressBar({ current, target, label, color, unit = '' }: D
                     )}
                 </View>
 
-                <View style={styles.percentageContainer}>
-                    <Text style={[styles.percentage, { color: isOverTarget ? '#EF4444' : color }]}>
-                        {Math.round(percentage)}%
-                    </Text>
-                </View>
+                {/* Remove the old percentage container that was causing the problem */}
             </View>
 
             <View style={styles.footer}>
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 6,
     },
     label: {
         fontSize: 14,
@@ -88,6 +89,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Inter-Medium',
         color: '#6B7280',
+    },
+    // New fixed percentage text that won't move with the progress
+    percentageFixed: {
+        fontSize: 12,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 4,
     },
     progressContainer: {
         height: 120,
@@ -114,18 +121,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         opacity: 0.8,
     },
-    percentageContainer: {
-        position: 'absolute',
-        top: -20,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-    },
-    percentage: {
-        fontSize: 12,
-        fontFamily: 'Inter-Bold',
-        textAlign: 'center',
-    },
+    // Remove the percentageContainer style
     footer: {
         alignItems: 'center',
     },

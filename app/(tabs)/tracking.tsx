@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TouchableNativeFeedback,
   Dimensions,
-  Platform,
+  Platform, // Platform is already imported
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +22,48 @@ import { RestTimer } from '@/components/RestTimer';
 import { DailyProgressBar } from '@/components/DailyProgressBar';
 
 const { width } = Dimensions.get('window');
+
+// Define TabButton outside TrackingScreen
+const TabButton = ({
+  title,
+  isActive,
+  onPress,
+  styles,
+  platformOS
+}: {
+  title: string;
+  isActive: boolean;
+  onPress: () => void;
+  styles: any; // Consider a more specific type if possible
+  platformOS: typeof Platform.OS;
+}) => {
+  if (platformOS === 'android') {
+    return (
+      <TouchableNativeFeedback
+        onPress={onPress}
+        background={TouchableNativeFeedback.Ripple('#E5E7EB', true)}
+      >
+        <View style={[styles.tab, isActive && styles.activeTab]}>
+          <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+            {title}
+          </Text>
+        </View>
+      </TouchableNativeFeedback>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.tab, isActive && styles.activeTab]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function TrackingScreen() {
   const { getRecentManualExercises, records, getExerciseProgress } = useWorkoutTracking();
@@ -40,6 +82,7 @@ export default function TrackingScreen() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restDuration, setRestDuration] = useState(60);
+  const [refreshKey, setRefreshKey] = useState(0); // Added for forcing data refresh
   const insets = useSafeAreaInsets();
 
   // Refresh macros when screen comes into focus
@@ -52,46 +95,16 @@ export default function TrackingScreen() {
   const recentManualExercises = getRecentManualExercises(10);
 
   // Get unique exercise names for progress tracking
+  // Combine names from recent exercises and personal records for a more comprehensive list
+  const exerciseNamesFromRecents = recentManualExercises.map(ex => ex.exerciseName);
+  const exerciseNamesFromRecords = records.map(rec => rec.exerciseName);
   const uniqueExercises = Array.from(
-    new Set(recentManualExercises.map(ex => ex.exerciseName))
+    new Set([...exerciseNamesFromRecents, ...exerciseNamesFromRecords])
   );
 
   // Platform-specific touchable component
-  const TouchableComponent = Platform.OS === 'android' ? TouchableNativeFeedback : TouchableOpacity;
-
-  const TabButton = ({ tab, title, isActive, onPress }: {
-    tab: 'exercises' | 'progress' | 'records' | 'macros';
-    title: string;
-    isActive: boolean;
-    onPress: () => void;
-  }) => {
-    if (Platform.OS === 'android') {
-      return (
-        <TouchableNativeFeedback
-          onPress={onPress}
-          background={TouchableNativeFeedback.Ripple('#E5E7EB', true)}
-        >
-          <View style={[styles.tab, isActive && styles.activeTab]}>
-            <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-              {title}
-            </Text>
-          </View>
-        </TouchableNativeFeedback>
-      );
-    }
-
-    return (
-      <TouchableOpacity
-        style={[styles.tab, isActive && styles.activeTab]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-          {title}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  // const TouchableComponent = Platform.OS === 'android' ? TouchableNativeFeedback : TouchableOpacity; 
+  // The TabButton component below handles platform differences directly.
 
   const startQuickRestTimer = (duration: number = 60) => {
     setRestDuration(duration);
@@ -104,6 +117,11 @@ export default function TrackingScreen() {
 
   const handleRestSkip = () => {
     setShowRestTimer(false);
+  };
+
+  const handleManualEntryClose = () => {
+    setShowManualEntry(false);
+    setRefreshKey(prevKey => prevKey + 1); // Trigger re-evaluation of workout data
   };
 
   const ExerciseItem = ({ exercise }: { exercise: any }) => (
@@ -294,78 +312,7 @@ export default function TrackingScreen() {
     return workoutWithMacros?.macroGoals || null;
   };
 
-  const macroGoals = getLatestMacroGoals(); const MacroProgressCircle = ({ label, current, target, color }: {
-    label: string;
-    current: number;
-    target: number;
-    color: string;
-  }) => {
-    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-    const [animatedValue] = useState(new Animated.Value(0));
-
-    useEffect(() => {
-      Animated.timing(animatedValue, {
-        toValue: percentage,
-        duration: 1000,
-        useNativeDriver: false,
-      }).start();
-    }, [percentage]);
-
-    const size = 90;
-    const strokeWidth = 8;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-
-    return (
-      <View style={styles.macroCircle}>
-        <View style={styles.macroCircleContainer}>
-          {/* Background Circle */}
-          <View style={[styles.circleBackground, {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: strokeWidth,
-            borderColor: '#F3F4F6'
-          }]} />
-
-          {/* Progress Circle using multiple segments for better visual */}
-          <View style={styles.progressContainer}>
-            {[0, 1, 2, 3].map((quarter) => {
-              const quarterPercentage = Math.max(0, Math.min(25, percentage - quarter * 25));
-              const opacity = quarterPercentage / 25;
-              const rotation = quarter * 90 - 90; // Start from top
-
-              return (
-                <Animated.View
-                  key={quarter}
-                  style={[
-                    styles.quarterCircle,
-                    {
-                      width: size,
-                      height: size,
-                      borderRadius: size / 2,
-                      borderWidth: strokeWidth,
-                      borderColor: 'transparent',
-                      borderTopColor: color,
-                      transform: [{ rotate: `${rotation}deg` }],
-                      opacity: opacity,
-                    }
-                  ]}
-                />
-              );
-            })}
-          </View>
-
-          {/* Center Content */}
-          <View style={styles.macroCircleContent}>
-            <Text style={styles.macroValue}>{current}g</Text>
-            <Text style={styles.macroTarget}>/{target}g</Text>
-          </View>
-        </View>
-        <Text style={styles.macroLabel}>{label}</Text>
-      </View>
-    );
-  };
+  const macroGoals = getLatestMacroGoals();
 
   const renderMacros = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
@@ -430,47 +377,34 @@ export default function TrackingScreen() {
             </View>
           </View>
 
-          {/* Macro Circles */}
-          <View style={styles.macroCirclesContainer}>
-            <MacroProgressCircle
-              label="Protein"
-              current={dailyMacros.protein}
-              target={macroGoals.protein}
-              color="#3B82F6"
-            />
-            <MacroProgressCircle
-              label="Carbs"
-              current={dailyMacros.carbs}
-              target={macroGoals.carbs}
-              color="#10B981"
-            />
-            <MacroProgressCircle
-              label="Fats"
-              current={dailyMacros.fats}
-              target={macroGoals.fats}
-              color="#F59E0B"
-            />
-          </View>
-
           {/* Quick Add Section */}
           <View style={styles.quickAddSection}>
             <Text style={styles.quickAddTitle}>Quick Add</Text>
             <View style={styles.quickAddButtons}>
               <TouchableOpacity
                 style={[styles.quickAddButton, { backgroundColor: '#3B82F615' }]}
-                onPress={() => addMacros({ protein: 25, calories: 100 })}
+                onPress={async () => {
+                  await addMacros({ protein: 25, calories: 100 });
+                  refreshMacros();
+                }}
               >
                 <Text style={[styles.quickAddText, { color: '#3B82F6' }]}>+25g Protein</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickAddButton, { backgroundColor: '#10B98115' }]}
-                onPress={() => addMacros({ carbs: 30, calories: 120 })}
+                onPress={async () => {
+                  await addMacros({ carbs: 30, calories: 120 });
+                  refreshMacros();
+                }}
               >
                 <Text style={[styles.quickAddText, { color: '#10B981' }]}>+30g Carbs</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickAddButton, { backgroundColor: '#F59E0B15' }]}
-                onPress={() => addMacros({ fats: 10, calories: 90 })}
+                onPress={async () => {
+                  await addMacros({ fats: 10, calories: 90 });
+                  refreshMacros();
+                }}
               >
                 <Text style={[styles.quickAddText, { color: '#F59E0B' }]}>+10g Fats</Text>
               </TouchableOpacity>
@@ -480,7 +414,10 @@ export default function TrackingScreen() {
           {/* Reset Button */}
           <TouchableOpacity
             style={styles.resetButton}
-            onPress={resetDailyMacros}
+            onPress={async () => {
+              await resetDailyMacros();
+              refreshMacros();
+            }}
           >
             <Text style={styles.resetButtonText}>Reset Daily Intake</Text>
           </TouchableOpacity>
@@ -512,28 +449,32 @@ export default function TrackingScreen() {
         <View style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
           <View style={styles.tabBar}>
             <TabButton
-              tab="exercises"
               title="Exercises"
               isActive={selectedTab === 'exercises'}
               onPress={() => setSelectedTab('exercises')}
+              styles={styles}
+              platformOS={Platform.OS}
             />
             <TabButton
-              tab="progress"
               title="Progress"
               isActive={selectedTab === 'progress'}
               onPress={() => setSelectedTab('progress')}
+              styles={styles}
+              platformOS={Platform.OS}
             />
             <TabButton
-              tab="records"
               title="Records"
               isActive={selectedTab === 'records'}
               onPress={() => setSelectedTab('records')}
+              styles={styles}
+              platformOS={Platform.OS}
             />
             <TabButton
-              tab="macros"
               title="Macros"
               isActive={selectedTab === 'macros'}
               onPress={() => setSelectedTab('macros')}
+              styles={styles}
+              platformOS={Platform.OS}
             />
           </View>
 
@@ -563,7 +504,7 @@ export default function TrackingScreen() {
 
       <ManualExerciseEntry
         visible={showManualEntry}
-        onClose={() => setShowManualEntry(false)}
+        onClose={handleManualEntryClose} // Updated onClose handler
       />
 
       {/* Rest Timer */}
@@ -954,6 +895,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
     marginLeft: 12,
+
   },
   caloriesProgress: {
     alignItems: 'center',
@@ -980,124 +922,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
-  },
-  macroCirclesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 24,
-  },
-  macroCircle: {
-    alignItems: 'center',
-  },
-  macroCircleContainer: {
-    position: 'relative',
-    width: 90,
-    height: 90,
-    marginBottom: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  circleBackground: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  progressContainer: {
-    position: 'absolute',
-    width: 90,
-    height: 90,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quarterCircle: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  macroCircleBackground: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 6,
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  macroCircleProgress: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  innerCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
-    position: 'absolute',
-    top: 15,
-    left: 15,
-  },
-  progressArc: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  progressRing: {
-    position: 'absolute',
-    width: 90,
-    height: 90,
-  },
-  halfCircle: {
-    width: 90,
-    height: 45,
-    borderWidth: 6,
-    borderColor: '#F3F4F6',
-    position: 'absolute',
-  },
-  topHalfCircle: {
-    borderTopLeftRadius: 45,
-    borderTopRightRadius: 45,
-    borderBottomWidth: 0,
-    top: 0,
-  },
-  bottomHalfCircle: {
-    borderBottomLeftRadius: 45,
-    borderBottomRightRadius: 45,
-    borderTopWidth: 0,
-    bottom: 0,
-  },
-  progressOverlay: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    position: 'absolute',
-    top: 6,
-    left: 6,
-  },
-  macroCircleContent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  macroValue: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    color: '#1F2937',
-  },
-  macroTarget: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-  },
-  macroLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#374151',
   },
   quickAddSection: {
     backgroundColor: '#FFFFFF',
@@ -1150,7 +974,7 @@ const styles = StyleSheet.create({
   dailyProgressSection: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 5,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
