@@ -111,9 +111,6 @@ The app integrates with Google's Gemini AI to generate personalized workout plan
 | ![](https://github.com/user-attachments/assets/cac7e840-0b39-4af6-bdd4-c60b920feadf) | ![](https://github.com/user-attachments/assets/8e76b8cc-7181-417d-9dff-448b7e36dc6b) | ![](https://github.com/user-attachments/assets/8e6a1407-fbb4-4175-aa94-e482f7b45833) | ![](https://github.com/user-attachments/assets/b81e250f-ad0c-4ea3-9bb0-b42f0094a31e) |
 |---|---|---|---|
 
-### 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ### 🤝 Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
 
