@@ -43,10 +43,9 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
-    "is-odd": "^3.0.1"
+    "is-odd": "^3.0.1",
+    "chart.js": "^4.5.1"
 
-    
-    
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
